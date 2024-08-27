@@ -174,24 +174,37 @@ def detect_faces(rgb_stack):
     # each key in assorted_boxes now has cropped faces of single person
     stacked_faces = {}
     for key in assorted_boxes:
-        # is this face seen in atleast 70% frames?
-        ws,we,hs,he = rgb_stack[0].shape[1],0,rgb_stack[0].shape[2],0
-        if len(assorted_boxes[key]) >= int(len(boxes)*0.7):
+        # Is this face seen in at least 70% of the frames?
+        if len(assorted_boxes[key]) >= int(len(boxes) * 0.7):
+            # Initialize bounding box coordinates for union
+            ws, hs = float('inf'), float('inf')  # Min values for width and height
+            we, he = 0, 0  # Max values for width and height
+            
+            # Calculate the union of bounding boxes
             for box in assorted_boxes[key]:
-                ws = (int(box[0]) if box[0] < ws else ws)
-                we = (int(box[2]) if box[2] > we else we)
-                hs = (int(box[1]) if box[1] < hs else hs)
-                he = (int(box[3]) if box[3] > he else he)
+                ws = min(ws, int(box[0]))  # Update min x (start width)
+                we = max(we, int(box[2]))  # Update max x (end width)
+                hs = min(hs, int(box[1]))  # Update min y (start height)
+                he = max(he, int(box[3]))  # Update max y (end height)
+
+            # Convert the rgb_stack into a tensor
             frames = torch.tensor(np.array(rgb_stack))
-            current = frames[:,hs:he,ws:we,:]
+            
+            # Crop the frames using the union bounding box
+            current = frames[:, hs:he, ws:we, :]
+
+            # Resize and store the cropped faces for this person
             test_frames = []
             for i in range(num_frames):
-                img = Image.fromarray(current[i,:,:,:].numpy())
-                img = img.resize((224,224),Image.Resampling.LANCZOS)
+                img = Image.fromarray(current[i, :, :, :].numpy())
+                img = img.resize((224, 224), Image.Resampling.LANCZOS)
                 test_frames.append(img)
+            
+            # Store the cropped frames and union bounding box in stacked_faces
             stacked_faces[key] = {}
             stacked_faces[key]['frames'] = test_frames
-            stacked_faces[key]['bbox'] = [ws,we,hs,he]
+            stacked_faces[key]['bbox'] = [ws, we, hs, he]
+
     return stacked_faces
 
 def get_data(batch, outname):
