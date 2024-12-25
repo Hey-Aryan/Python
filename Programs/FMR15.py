@@ -1,0 +1,1 @@
+from functools import reduce; Data = [1,2,3,4]; print("Input data         ->", Data); output = list(filter(lambda No : (No % 2 == 0), Data)); print("Output after filter ->", output); moutput = list(map(lambda No: No+2, output)); print("Output after map    ->", moutput); result = reduce(lambda A,B: A+B, moutput); print("Output after reduce ->", result)
